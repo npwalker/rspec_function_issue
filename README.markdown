@@ -1,60 +1,542 @@
-#### Table of Contents
+# rspec puppet code function issue
 
-1. [Overview](#overview)
-2. [Module Description - What the module does and why it is useful](#module-description)
-3. [Setup - The basics of getting started with rspec_function_issue](#setup)
-    * [What rspec_function_issue affects](#what-rspec_function_issue-affects)
-    * [Setup requirements](#setup-requirements)
-    * [Beginning with rspec_function_issue](#beginning-with-rspec_function_issue)
-4. [Usage - Configuration options and additional functionality](#usage)
-5. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
-5. [Limitations - OS compatibility, etc.](#limitations)
-6. [Development - Guide for contributing to the module](#development)
+This repo contains two puppet code only functions that do the exact same thing.
+One of the functions uses $facts and one of the uses $:: top-scope variables.
+The version using $facts cannot find the fact values.  
 
-## Overview
+What's strange is that if you use the function in a manifest it will not fail
+the manifest.  I assume the $facts hash is populated for classes but not for
+functions.  
 
-A one-maybe-two sentence summary of what the module does/what problem it solves. This is your 30 second elevator pitch for your module. Consider including OS/Puppet version it works with.       
+## rspec tests fail when using $facts inside of a puppet code FunctionMatchers
 
-## Module Description
+~~~
+NoWay:rspec_function_issue nw$ bundle exec rake spec
+fatal: destination path 'spec/fixtures/modules/stdlib' already exists and is not an empty directory.
+/usr/local/var/rbenv/versions/2.1.9/bin/ruby -I/Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib:/Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-support-3.1.2/lib /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec --pattern spec/\{aliases,classes,defines,unit,functions,hosts,integration,type_aliases,types\}/\*\*/\*_spec.rb --color
 
-If applicable, this section should have a brief description of the technology the module integrates with and what that integration enables. This section should answer the questions: "What does this module *do*?" and "Why would I use it?"
+rspec_function_issue::os_uses_systemd_facts
+  when on sles 12 with systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return true (FAILED - 1)
+  when on sles 11 without systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return false (FAILED - 2)
+  when on ubuntu 14.04 without systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return false (FAILED - 3)
+  when on ubuntu 16.04 with systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return true (FAILED - 4)
+  when on redhat 6 without systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return false (FAILED - 5)
+  when on redhat 7 with systemD
+    should run rspec_function_issue::os_uses_systemd_facts() and return true (FAILED - 6)
 
-If your module has a range of functionality (installation, configuration, management, etc.) this is the time to mention it.
+rspec_function_issue::os_uses_systemd
+  when on sles 12 with systemD
+    should run rspec_function_issue::os_uses_systemd() and return true
+  when on sles 11 without systemD
+    should run rspec_function_issue::os_uses_systemd() and return false
+  when on ubuntu 14.04 without systemD
+    should run rspec_function_issue::os_uses_systemd() and return false
+  when on ubuntu 16.04 with systemD
+    should run rspec_function_issue::os_uses_systemd() and return true
+  when on redhat 6 without systemD
+    should run rspec_function_issue::os_uses_systemd() and return false
+  when on redhat 7 with systemD
+    should run rspec_function_issue::os_uses_systemd() and return true
 
-## Setup
+Failures:
 
-### What rspec_function_issue affects
+  1) rspec_function_issue::os_uses_systemd_facts when on sles 12 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+     Failure/Error: it { is_expected.to run.and_return(true) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned true instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:81:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:48:in `block in visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:42:in `visit_this'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:71:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:19:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:19:in `block (3 levels) in <top (required)>'
 
-* A list of files, packages, services, or operations that the module will alter, impact, or execute on the system it's installed on.
-* This is a great place to stick any warnings.
-* Can be in list or paragraph form. 
+  2) rspec_function_issue::os_uses_systemd_facts when on sles 11 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+     Failure/Error: it { is_expected.to run.and_return(false) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned false instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:79:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:29:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:29:in `block (3 levels) in <top (required)>'
 
-### Setup Requirements **OPTIONAL**
+  3) rspec_function_issue::os_uses_systemd_facts when on ubuntu 14.04 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+     Failure/Error: it { is_expected.to run.and_return(false) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned false instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:79:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:40:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:40:in `block (3 levels) in <top (required)>'
 
-If your module requires anything extra before setting up (pluginsync enabled, etc.), mention it here. 
+  4) rspec_function_issue::os_uses_systemd_facts when on ubuntu 16.04 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+     Failure/Error: it { is_expected.to run.and_return(true) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned true instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:79:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:51:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:51:in `block (3 levels) in <top (required)>'
 
-### Beginning with rspec_function_issue
+  5) rspec_function_issue::os_uses_systemd_facts when on redhat 6 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+     Failure/Error: it { is_expected.to run.and_return(false) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned false instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:79:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:63:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:63:in `block (3 levels) in <top (required)>'
 
-The very basic steps needed for a user to get the module up and running. 
+  6) rspec_function_issue::os_uses_systemd_facts when on redhat 7 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+     Failure/Error: it { is_expected.to run.and_return(true) }
+       expected rspec_function_issue::os_uses_systemd_facts() to have returned true instead of raising Puppet::PreformattedError(Evaluation Error: Operator '[]' is not applicable to an Undef Value. at /Users/nw/git_repos/rspec_function_issue/spec/fixtures/modules/rspec_function_issue/functions/os_uses_systemd_facts.pp:2:24)
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:39:in `optionally_fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/runtime3_support.rb:21:in `fail'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:30:in `access_Object'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:79:in `visit_this_2'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/access_operator.rb:24:in `access'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:482:in `eval_AccessExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:488:in `eval_ComparisonExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:608:in `eval_AndExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:695:in `eval_ParenthesizedExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:359:in `eval_AssignmentExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `block in eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `each'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `reduce'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:638:in `eval_BlockExpression'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/visitor.rb:69:in `visit_this_1'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:82:in `evaluate'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:178:in `block in evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:938:in `with_guarded_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/evaluator_impl.rb:174:in `evaluate_block_with_bindings'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:225:in `block in call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:224:in `call_with_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:77:in `block in invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:911:in `without_ephemeral_scopes'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/parser/scope.rb:901:in `with_global_scope'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/evaluator/closure.rb:76:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:38:in `block in dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/dispatcher.rb:37:in `dispatch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:46:in `block in call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `catch'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/pops/functions/function.rb:45:in `call'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:19:in `block in execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet/context.rb:65:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/puppet-4.9.4/lib/puppet.rb:293:in `override'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/example/function_example_group.rb:18:in `execute'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-puppet-2.5.0/lib/rspec-puppet/matchers/run.rb:10:in `matches?'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/handler.rb:48:in `handle_matcher'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-expectations-3.1.2/lib/rspec/expectations/expectation_target.rb:54:in `to'
+       /Users/nw/git_repos/rspec_function_issue/spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:75:in `block (3 levels) in <top (required)>'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `instance_exec'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:152:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:329:in `with_around_example_hooks'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example.rb:149:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:490:in `block in run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:486:in `run_examples'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:453:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `block in run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/example_group.rb:454:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block (2 levels) in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `map'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:111:in `block in run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/reporter.rb:53:in `report'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:107:in `run_specs'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:85:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:69:in `run'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib/rspec/core/runner.rb:37:in `invoke'
+       /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec:4:in `<main>'
+     # ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:75:in `block (3 levels) in <top (required)>'
 
-If your most recent release breaks compatibility or requires particular steps for upgrading, you may wish to include an additional section here: Upgrading (For an example, see http://forge.puppetlabs.com/puppetlabs/firewall).
+Finished in 0.66507 seconds (files took 1.35 seconds to load)
+12 examples, 6 failures
 
-## Usage
+Failed examples:
 
-Put the classes, types, and resources for customizing, configuring, and doing the fancy stuff with your module here. 
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:19 # rspec_function_issue::os_uses_systemd_facts when on sles 12 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:29 # rspec_function_issue::os_uses_systemd_facts when on sles 11 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:40 # rspec_function_issue::os_uses_systemd_facts when on ubuntu 14.04 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:51 # rspec_function_issue::os_uses_systemd_facts when on ubuntu 16.04 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:63 # rspec_function_issue::os_uses_systemd_facts when on redhat 6 without systemD should run rspec_function_issue::os_uses_systemd_facts() and return false
+rspec ./spec/functions/rspec_function_issue_os_uses_systemd_facts_spec.rb:75 # rspec_function_issue::os_uses_systemd_facts when on redhat 7 with systemD should run rspec_function_issue::os_uses_systemd_facts() and return true
+Coverage report generated for RSpec to /Users/nw/git_repos/rspec_function_issue/coverage. 0.0 / 0.0 LOC (100.0%) covered.
 
-## Reference
+COVERAGE: 100.00% -- 0.0/0.0 lines in 0 files
 
-Here, list the classes, types, providers, facts, etc contained in your module. This section should include all of the under-the-hood workings of your module so people know what the module is touching on their system but don't need to mess with things. (We are working on automating this section!)
 
-## Limitations
+Total resources:   0
+Touched resources: 0
+Resource coverage:   NaN%
+Untouched resources:
 
-This is where you list OS compatibility, version compatibility, etc.
 
-## Development
-
-Since your module is awesome, other users will want to play with it. Let them know what the ground rules for contributing are.
-
-## Release Notes/Contributors/Etc **Optional**
-
-If you aren't using changelog, put your release notes here (though you should consider using changelog). You may also add any additional sections you feel are necessary or important to include here. Please use the `## ` header. 
+/usr/local/var/rbenv/versions/2.1.9/bin/ruby -I/Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/lib:/Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-support-3.1.2/lib /Users/nw/git_repos/rspec_function_issue/vendor/bundle/ruby/2.1.0/gems/rspec-core-3.1.7/exe/rspec --pattern spec/\{aliases,classes,defines,unit,functions,hosts,integration,type_aliases,types\}/\*\*/\*_spec.rb --color failed
+~~~
