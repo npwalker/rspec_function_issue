@@ -1,3 +1,7 @@
+# https://github.com/rodjek/rspec-puppet/issues/503
+
+This repo exists to display an issue with rspec-puppet which has since been fixed in a commit after 2.5.0 was released and is not in an official release at the time of this writing.  
+
 # rspec puppet code function issue
 
 This repo contains two puppet code only functions that do the exact same thing.
